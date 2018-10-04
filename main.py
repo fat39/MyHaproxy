@@ -5,12 +5,8 @@ from conf import settings
 from utils.analyzing.haproxy import HaproxyAnalyzer
 from utils.analyzing import myanalyzer
 import json
-import time
 
-handler_settings = {
-    "template_path":"template",
-    "static_path":"static",
-}
+
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
@@ -20,27 +16,28 @@ class IndexHandler(tornado.web.RequestHandler):
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self,file):
-        print("get")
+        print("==============get==============")
         # self._headers.add('Access-Control-Allow-Origin',"*")
         # print(self._headers)
         # print(type(self._headers))
         ma = myanalyzer.myanalyzer(file)
-        get_result = ma.raw_context()
-        self.write(get_result)
+        hp_obj = ma.get_obj()
+        self.write(hp_obj.raw_text)
 
     def post(self,file):
         """
         新增条目
-        :param file: 格式是dict的json格式，如｛'a':1｝
+        格式是dict的json格式，如｛'a':1｝
+        :param file:
         :return:
         """
+        print("==============post==============")
         ma = myanalyzer.myanalyzer(file)
         data = self.get_argument("data")
         data = json.loads(data)
-        post_result = ma.create_item(data)
-        print("post")
-
-        self.write(post_result)
+        new_hp_obj = ma.create_obj(data)
+        # self.write("post")
+        self.write(new_hp_obj.raw_text)
 
     def patch(self,file):
         print("patch")
@@ -58,7 +55,7 @@ class MainHandler(tornado.web.RequestHandler):
 application = tornado.web.Application([
     (r"/index/$",IndexHandler),
     (r"/(?P<file>.+)/", MainHandler),
-],**handler_settings)
+],**settings.HANDLER_SETTINGS)
 
 
 
