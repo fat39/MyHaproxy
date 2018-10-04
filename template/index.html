@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+{% if support_analyzer %}
+<div id="result_box"></div>
+
+{% include inclu/create_item.html %}
+
+
+
+<select name="sa" id="sa">
+    {% for analyzer in support_analyzer %}
+        <option value="/{{analyzer}}/">{{analyzer}}</option>
+    {% end %}
+</select>
+
+<input type="button" value="get" id="get">
+<input type="button" value="post" id="post">
+<input type="button" value="put" id="put">
+<input type="button" value="patch" id="patch">
+<input type="button" value="delete" id="delete">
+{% else %}
+    <h1>目前不支持任何格式的文档</h1>
+{% end %}
+
+<script src={{static_url("jquery.js")}}'></script>
+<script>
+    $(function(){
+        var url = $("#sa").val();
+        $("#sa").change(function(){
+            url = $("#sa").val();
+        });
+
+        function get_kv(){
+            var title = $("#title").val();
+            var k = $(".k");
+            var v = $(".v");
+            var d = {};
+            var ret = {};
+            var l = new Array();
+            $.each(k,function(idx,item){
+                if(! ($(item).val() in d)){
+                    //console.log(item)
+                    d[$(item).val()] = $(v[idx]).val()
+                }else{
+                    alert("重复key："+$(item).val())
+                }
+            });
+
+            l.push(d);
+            ret["title"] = title;
+            ret["record"] = l;
+            return JSON.stringify(ret)
+        }
+
+
+        function write_mainbox(arg){
+            $("#result_box").text(arg).css({"white-space":"pre","height":"350px","background-color": "lightsteelblue","overflow":"auto"})
+        }
+        $("#get").click(function(){
+            $.ajax({
+                //url:"/haproxy/",
+                url:url,
+                type:"GET",
+                success:function(data){
+                    //console.log(data);
+                    write_mainbox(data)
+                }
+            })
+        });
+
+
+
+
+        $("#post").click(function(){
+            var kv = get_kv();
+            // console.log(kv)
+            $.ajax({
+                //url:"/haproxy/",
+                url:url,
+                type:"POST",
+                data:{"data":kv,"haha":123},
+                success:function(ret){
+                    console.log(ret);
+                    write_mainbox(ret)
+                }
+            })
+        });
+
+        $("#put").click(function(){
+
+            $.ajax({
+                //url:"/haproxy/",
+                url:url,
+                type:"PUT",
+                success:function(ret){
+                    console.log(ret);
+                    write_mainbox(ret)
+                }
+            })
+        });
+
+        $("#patch").click(function(){
+            $.ajax({
+                //url:"/haproxy/",
+                url:url,
+                type:"PATCH",
+                success:function(ret){
+                    console.log(ret);
+                    write_mainbox(ret)
+                }
+            })
+        });
+        $("#delete").click(function(){
+            $.ajax({
+                //url:"/haproxy/",
+                url:url,
+                type:"DELETE",
+                success:function(ret){
+                    console.log(ret);
+                    write_mainbox(ret)
+                }
+            })
+        });
+    });
+</script>
+
+</body>
+</html>
