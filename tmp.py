@@ -8,7 +8,7 @@ url = "http://127.0.0.1:8888/haproxy/"
 
 data = {
     "data":json.dumps({
-        'title': 'ssdfasdfsdfsdfsdfsdf',
+        'title': 'addddddddddddddddsf',
         'record': [
             {
                 'aaaaaaaaaaaa': 'bbbbbbbbb',

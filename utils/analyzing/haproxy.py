@@ -27,14 +27,15 @@ class Block(object):
 
 
 class Line(object):
+    father = ""
 
-    def __init__(self, raw_text, index=0):
-        self.raw_text = raw_text
+    def __init__(self, line, index=0):
+        self.line = line.rstrip("\n")  # 去除换行符
         self.index = index
 
     @property
-    def line(self):
-        return self.raw_text.strip("\n")  # 去除换行符
+    def raw_text(self):
+        return self.line + "\n"
 
     @property
     def is_total_blank(self):
@@ -116,8 +117,7 @@ class Haproxy(object):
         tmp = ""
         for k,line in self.lines_odict.items():
             tmp += line.raw_text
-
-        return tmp
+        return tmp.rstrip("\n")
 
     @classmethod
     def obj_handle(cls,obj):
@@ -126,14 +126,18 @@ class Haproxy(object):
         b = Block()  # file的头部block，可能没有father
         blocks_odict[b.father] = b
         for index,line in enumerate(obj):
-            l = Line(raw_text=line,index=index)
-            lines_odict[l.context or l.index] = l
+            l = Line(line=line,index=index)
+
             if not l.is_title:
-                b.children[l.context or l.index] = l
+                l.father = b.father.context
+                # "{}_{}".format(l.father,l.context)
+                b.children["{}_{}".format(l.father,l.context) if l.context else l.index] = l
+                # b.children[l.context or l.index] = l
             else:
                 b = Block(father=l)
                 blocks_odict[l.context] = b
 
+            lines_odict["{}_{}".format(l.father,l.context) if l.context else l.index] = l
 
         obj = cls()
         obj.lines_odict = lines_odict
@@ -189,9 +193,7 @@ class Haproxy(object):
     def dump_file(self,file_path,coding="utf-8"):
         with open(file_path, encoding=coding, mode="w") as f_obj:
             for k,line_obj in self.lines_odict.items():
-
-                f_obj.write(line_obj.raw_text if line_obj.raw_text.endswith("\n") else line_obj.raw_text+"\n")
-
+                f_obj.write(line_obj.raw_text)
 
 
 class HaproxyAnalyzer():
