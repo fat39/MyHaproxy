@@ -3,9 +3,12 @@ from conf import settings
 from collections import OrderedDict
 import copy
 import time
+import os
+import json
 
 __filename__ = "haproxy"
 file_path = settings.FILES[__filename__]["path"]
+bak_file_dir = settings.FILES["bak"]["dir"]
 
 
 class Block(object):
@@ -121,6 +124,7 @@ class Haproxy(object):
 
     @classmethod
     def obj_handle(cls,obj):
+        # 处理从文件、dict、其他传进来的obj并转换为Haproxy obj。
         lines_odict = OrderedDict()
         blocks_odict = OrderedDict()
         b = Block()  # file的头部block，可能没有father
@@ -130,14 +134,14 @@ class Haproxy(object):
 
             if not l.is_title:
                 l.father = b.father.context
-                # "{}_{}".format(l.father,l.context)
-                b.children["{}_{}".format(l.father,l.context) if l.context else l.index] = l
+                "{}_{}".format(l.father,l.context)
+                b.children["{}_{}".format(l.father,l.context or l.index)] = l
                 # b.children[l.context or l.index] = l
             else:
                 b = Block(father=l)
                 blocks_odict[l.context] = b
 
-            lines_odict["{}_{}".format(l.father,l.context) if l.context else l.index] = l
+            lines_odict["{}_{}".format(l.father,l.context or l.index)] = l
 
         obj = cls()
         obj.lines_odict = lines_odict
@@ -154,7 +158,6 @@ class Haproxy(object):
 
     @classmethod
     def init_from_dict(cls,kwargs):
-        print(kwargs)
         lines_list = []
         title = kwargs["title"]
         lines_list.append(title + "\n")
@@ -180,7 +183,13 @@ class Haproxy(object):
             for base_k,base_v in base_obj.__dict__.items():
                 if isinstance(base_v,OrderedDict):  # 暂时制作ordereddict
                     obj_v = getattr(obj,base_k,None)
+                    print(new_obj.__dict__[base_k])
+                    print("##################################\n")
                     new_obj.__dict__[base_k].update(obj_v or {})  # 如果objs里没有某个字段，比如file_path，则不要
+                    print(new_obj.__dict__[base_k])
+                    print("##################################\n")
+                    print(obj_v)
+
                 else:  # 暂时制作ordereddict
                     continue
         # print(dir(base_obj))
@@ -188,12 +197,22 @@ class Haproxy(object):
         return new_obj
 
     def bak_file(self):
-        pass
+        bak_file_path = os.path.join(bak_file_dir,"{}_{}".format(int(time.time()),__filename__))
+        with open(bak_file_path,"w") as f:
+            for k,line in self.lines_odict.items():
+                f.write(line.raw_text)
+
+        record_dict = {}
+        record_dict["latest"] = bak_file_path
+        with open(os.path.join(bak_file_dir,"record"),"w") as f:
+            f.write(json.dumps(record_dict))
 
     def dump_file(self,file_path,coding="utf-8"):
         with open(file_path, encoding=coding, mode="w") as f_obj:
             for k,line_obj in self.lines_odict.items():
+                # print(k)
                 f_obj.write(line_obj.raw_text)
+
 
 
 class HaproxyAnalyzer():
@@ -212,6 +231,7 @@ class HaproxyAnalyzer():
         origin_hp_obj = self.get_obj()
         new_hp_obj = self.haproxy.init_from_mul_obj(origin_hp_obj,create_hp_obj)
         # print("HaproxyAnalyzer" + str(items))
+        origin_hp_obj.bak_file()
         new_hp_obj.dump_file(file_path)
         return new_hp_obj
 

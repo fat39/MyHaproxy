@@ -8,7 +8,7 @@ url = "http://127.0.0.1:8888/haproxy/"
 
 data = {
     "data":json.dumps({
-        'title': 'addddddddddddddddsf',
+        'title': 'ccccc',
         'record': [
             {
                 'aaaaaaaaaaaa': 'bbbbbbbbb',
@@ -20,3 +20,8 @@ data = {
 
 ret = requests.post(url,data=data)
 print(ret.text)
+
+# import time
+#
+# print(int(time.time()))
+

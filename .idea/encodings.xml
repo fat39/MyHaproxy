@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
-    <file url="file://$PROJECT_DIR$/test1.txt" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/test1.txt" charset="GBK" />
-    <file url="file://$PROJECT_DIR$/test1.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/data/bak/1538671685_haproxy" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/data/bak/1538673874_haproxy" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/data/bak/1538673941_haproxy" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/data/bak/1538674032_haproxy" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/data/bak/1538674086_haproxy" charset="GBK" />
     <file url="file://$PROJECT_DIR$/test1.txt" charset="GBK" />
   </component>
 </project>

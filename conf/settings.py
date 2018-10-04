@@ -10,6 +10,9 @@ HANDLER_SETTINGS = {
 
 
 FILES = {
+    "bak":{
+        "dir":os.path.join(BASE_DIR,"data","bak"),
+    },
     "haproxy":{
         "path":os.path.join(BASE_DIR,"data","haproxy")
     },
