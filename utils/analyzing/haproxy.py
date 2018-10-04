@@ -1,15 +1,24 @@
 # -*- coding:utf-8 -*-
 from conf import settings
 from collections import OrderedDict
-
+import copy
+import time
 
 __filename__ = "haproxy"
+file_path = settings.FILES[__filename__]["path"]
 
 
 class Block(object):
     def __init__(self, father=""):
-        self.father = father
-        self.children = {}
+        self.father = father or Line(father)
+        self.children = OrderedDict()
+
+    @property
+    def raw_text(self):
+        ret = (self.father.raw_text) if self.father.raw_text else ""
+        for k,child in self.children.items():
+            ret += child.raw_text
+        return ret
 
     def __str__(self):
         return "[BLOCK] {}".format(self.father)
@@ -18,9 +27,14 @@ class Block(object):
 
 
 class Line(object):
-    def __init__(self, line, index=0):
-        self.line = line.strip("\n")  # 去除换行符
+
+    def __init__(self, raw_text, index=0):
+        self.raw_text = raw_text
         self.index = index
+
+    @property
+    def line(self):
+        return self.raw_text.strip("\n")  # 去除换行符
 
     @property
     def is_total_blank(self):
@@ -97,34 +111,38 @@ class Line(object):
 
 class Haproxy(object):
 
+    @property
+    def raw_text(self):
+        tmp = ""
+        for k,line in self.lines_odict.items():
+            tmp += line.raw_text
+
+        return tmp
+
     @classmethod
     def obj_handle(cls,obj):
-        raw_text = ""
         lines_odict = OrderedDict()
         blocks_odict = OrderedDict()
-        b = Block()
+        b = Block()  # file的头部block，可能没有father
         blocks_odict[b.father] = b
         for index,line in enumerate(obj):
-            raw_text += line
-            l = Line(line=line,index=index)
+            l = Line(raw_text=line,index=index)
             lines_odict[l.context or l.index] = l
             if not l.is_title:
                 b.children[l.context or l.index] = l
             else:
-                b = Block(father=l.context)
-                blocks_odict[b.father] = b
+                b = Block(father=l)
+                blocks_odict[l.context] = b
+
 
         obj = cls()
-        obj.raw_text = raw_text
         obj.lines_odict = lines_odict
         obj.blocks_odict = blocks_odict
 
         return obj
 
-
     @classmethod
     def init_from_file(cls,file_path,coding="utf-8"):
-        print(file_path)
         with open(file_path, encoding=coding) as f_obj:
             haproxy_obj =  cls.obj_handle(f_obj)
             haproxy_obj.file_path = file_path
@@ -135,43 +153,66 @@ class Haproxy(object):
         print(kwargs)
         lines_list = []
         title = kwargs["title"]
-        lines_list.append(title)
+        lines_list.append(title + "\n")
         content_list = kwargs["record"]
         tmp = []
         for content in content_list:
             for k,v in content.items():
                 tmp.append("{k} {v}".format(k=k,v=v))
-            lines_list.append("    " + " ".join(tmp))
+            lines_list.append("    {}\n".format(" ".join(tmp)))
         haproxy_obj = cls.obj_handle(lines_list)
 
         return haproxy_obj
 
-    # def __str__(self):
-    #     return "[FILE] {}".format(self.file_path)
+    @classmethod
+    def init_from_mul_obj(cls,base_obj,*objs):
+        if not objs:return base_obj
+        return cls.merge_mul_objs(base_obj,*objs)
+
+    @classmethod
+    def merge_mul_objs(cls,base_obj,*objs):
+        new_obj = copy.deepcopy(base_obj)
+        for obj in objs:
+            for base_k,base_v in base_obj.__dict__.items():
+                if isinstance(base_v,OrderedDict):  # 暂时制作ordereddict
+                    obj_v = getattr(obj,base_k,None)
+                    new_obj.__dict__[base_k].update(obj_v or {})  # 如果objs里没有某个字段，比如file_path，则不要
+                else:  # 暂时制作ordereddict
+                    continue
+        # print(dir(base_obj))
+        # print(dir(new_obj))
+        return new_obj
+
+    def bak_file(self):
+        pass
+
+    def dump_file(self,file_path,coding="utf-8"):
+        with open(file_path, encoding=coding, mode="w") as f_obj:
+            for k,line_obj in self.lines_odict.items():
+
+                f_obj.write(line_obj.raw_text if line_obj.raw_text.endswith("\n") else line_obj.raw_text+"\n")
 
 
 
 class HaproxyAnalyzer():
+    haproxy = Haproxy
 
-    file = settings.FILES[__filename__]["path"]
-
-    def raw_context(self):
-
-        """ do something """
-
+    def get_obj(self):
         print("[GET] haproxy raw context")
-        hf = Haproxy.init_from_file(file_path=self.file)
-        return hf.raw_text
+        hp_obj = self.haproxy.init_from_file(file_path=file_path)
+        return hp_obj
 
-
-    def create_item(self,items):
+    def create_obj(self,items):
 
         """ do something"""
-        content_str = Haproxy.init_from_dict(items)
-        print(content_str)
 
-        print("HaproxyAnalyzer" + str(items))
-        return "haproxy create_item"
+        create_hp_obj = self.haproxy.init_from_dict(items)
+        origin_hp_obj = self.get_obj()
+        new_hp_obj = self.haproxy.init_from_mul_obj(origin_hp_obj,create_hp_obj)
+        # print("HaproxyAnalyzer" + str(items))
+        new_hp_obj.dump_file(file_path)
+        return new_hp_obj
+
 
 
     def __new__(cls,):

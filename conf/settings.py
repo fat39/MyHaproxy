@@ -3,6 +3,10 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+HANDLER_SETTINGS = {
+    "template_path":"template",
+    "static_path":"static",
+}
 
 
 FILES = {
